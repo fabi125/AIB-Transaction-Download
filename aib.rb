@@ -1,7 +1,7 @@
 require "rubygems"
 require "mechanize"
 require "logger"
-require "fastercsv"
+require 'csv'
 require 'date'
 require 'optparse'
 
@@ -112,19 +112,44 @@ def update_transactions(from, to)
              # grab the transactions table
              transactions = []
              for row in results.search("//table//th[text()='Date:']/../../../tbody/tr")
-                date = row.search('td[1]').text
+                date = row.search('td[1]').text.gsub('/', '.')
                 desc = row.search('td[2]').text
-                debit = row.search('td[3]').text
-                credit = row.search('td[4]').text
-                balance = row.search('td[5]').text
-                puts "#{date} #{desc} #{debit} #{credit} #{balance}"
-                transactions << [date, desc, debit, credit, balance] unless (debit.length == 0 and credit.length == 0)
+                debit = row.search('td[3]').text.gsub(',', '')
+                credit = row.search('td[4]').text.gsub(',', '')
+                balance = row.search('td[5]').text.gsub(',', '')
+                if debit.length != 0
+                   amount = "-" + debit
+                elsif credit.length != 0
+                   amount = credit
+                else
+                   amount = ''
+                end
+                puts "#{date} #{desc} #{amount} #{balance}"
+                transactions << [date, desc, amount, balance]
              end
              pp transactions
              
-             FasterCSV.open("#{account_name}_#{from.to_s}-#{to.to_s}.csv", "w") do |csv|
-                csv << ["Date", "Description", "Debit", "Credit", "Balance"]
-                transactions.each { |t| csv << t }
+             transactions_clean = []
+             i = 0
+             while i < transactions.length do
+             	  new_i = i
+                j = i + 1
+                while j < transactions.length && transactions[j][2].length == 0 do
+                   transactions[i][j - i + 3] = transactions[j][1]
+                   if transactions[i][3].length == 0 && transactions[j][3].length != 0
+                      transactions[i][3] = transactions[j][3]
+                   end
+                   new_i += 1
+                   j += 1
+                end
+                transactions_clean << transactions[i]
+                i = new_i + 1
+             end
+             pp transactions_clean
+             
+             CSV.open("#{account_name}_#{from.to_s}-#{to.to_s}.csv", "w") do |csv|
+                csv << ["Date", "Description", "Amount", "Balance", "Description2", "Description3"]
+                transactions_clean.each { |t| csv << t }
              end
         end
     end

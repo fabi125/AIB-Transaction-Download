@@ -18,3 +18,7 @@ Since you are trusting this script with your bank account details, I strongly su
 After the script has executed, you will have one CSV file for each of your accounts / credit cards. From there you can import into a spreadsheet or online financial analysis service.
 
 The script isn't particularly good at error checking and there are likely to be some edge cases where it doesn't work.
+
+Modified by fabi125:
+- Support for multi line text
+- Modify output format to be CSV compatible with Hibiscus.
